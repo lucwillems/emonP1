@@ -7,30 +7,25 @@ import (
 	"time"
 )
 
-// Telegram represents the structured data for one complete dump (or telegram)
-// of P1 data
-type OBISTypeIndex map[OBISType]int
-
-const P1DateTimeFormat = "060102150405"
+const P1TimestampFormat = "060102150405"
 
 type Telegram struct {
-	Device  string
-	Version string;
+	Device    string
+	Version   string
 	Timestamp time.Time
-	Objects map[OBISType]*TelegramObject
+	Objects   map[OBISId]*TelegramObject
 }
 
 func NewTelegram() *Telegram {
 	var t Telegram
-	t.Objects = make(map[OBISType]*TelegramObject)
+	t.Objects = make(map[OBISId]*TelegramObject)
 	return &t
 }
 
 // TelegramObject is the structured representation of a sinle line in a P1 data
 // dump. It can have one or more values
 type TelegramObject struct {
-	Id     string
-	Type   OBISType
+	Id     OBISId
 	Info   OType
 	Values []*TelegramValue
 }
@@ -38,272 +33,118 @@ type TelegramObject struct {
 // TelegramValue is one value of a P1 data line, optionally with a specific unit
 // of measurement
 type TelegramValue struct {
-	Valid bool;
+	Valid bool
 	Value string
 	Unit  string
 }
 
-func(t *Telegram) Get(obisType OBISType) *TelegramObject {
-	if i,ok :=t.Objects[obisType];ok==true {
+func (t *Telegram) Get(id OBISId) *TelegramObject {
+	if i, ok := t.Objects[id]; ok == true {
 		return i
 	}
 	//nil object
-	x:=TelegramObject{};
-	x.Type=OBISTypeNil;
-	x.Id="0-0:0.0.0";
-	x.Values=make([]*TelegramValue,0);
-	return &x;
+	x := TelegramObject{}
+	x.Id = OBISTypeNil
+	x.Info = TypeInfo[OBISTypeNil]
+	x.Values = make([]*TelegramValue, 0)
+	return &x
 }
 
-func(t *Telegram) Size() int {
-	return len(t.Objects);
+func (t *Telegram) Size() int {
+	return len(t.Objects)
 }
-func(t *Telegram) Has(obisType OBISType) bool {
-	_,ok :=t.Objects[obisType];
-	return ok;
+func (t *Telegram) Has(id OBISId) bool {
+	_, ok := t.Objects[id]
+	return ok
 }
 
 func (to *TelegramObject) len() int {
-	return len(to.Values);
+	return len(to.Values)
 }
 
 func (to *TelegramObject) Value() *TelegramValue {
-	if (len(to.Values)>0) {
-		return to.Values[0];
+	if len(to.Values) > 0 {
+		return to.Values[0]
 	}
 	//return nil value
-	x:=TelegramValue{};
-	x.Valid=false;
-	x.Value="";
-	x.Unit="";
-	return &x;
+	x := TelegramValue{}
+	x.Valid = false
+	x.Value = ""
+	x.Unit = ""
+	return &x
 }
 
-func (to *TelegramObject) AsString()(string,error) {
-	v:=to.Value();
-	if (v!=nil && v.Valid) {
-		return v.Value,nil;
+func (to *TelegramObject) AsString() (string, error) {
+	v := to.Value()
+	if v != nil && v.Valid {
+		return v.Value, nil
 	}
-	return "",errors.New("nil or invalid value");
+	return "", errors.New("nil or invalid value")
 }
 
-func (to *TelegramObject) AsFloat()(float64,error) {
-	v:=to.Value();
-	if (v!=nil  && v.Valid) {
+func (to *TelegramObject) AsFloat() (float64, error) {
+	v := to.Value()
+	if v != nil && v.Valid {
 		if f, err := strconv.ParseFloat(v.Value, 64); err == nil {
-			return f,nil;
+			return f, nil
 		} else {
-			return 0,err;
+			return 0, err
 		}
 	}
-	return 0,errors.New("nil TelegramValue");
+	return 0, errors.New("nil TelegramValue")
 }
 
-func (to *TelegramObject) AsInt()(int64,error) {
-	v:=to.Value();
-	if (v!=nil  && v.Valid) {
-		if i, err := strconv.ParseInt(v.Value, 10,64); err == nil {
-			return i,nil;
+func (to *TelegramObject) AsInt() (int64, error) {
+	v := to.Value()
+	if v != nil && v.Valid {
+		if i, err := strconv.ParseInt(v.Value, 10, 64); err == nil {
+			return i, nil
 		} else {
-			return 0,err;
+			return 0, err
 		}
 	}
-	return 0,errors.New("nil TelegramValue");
+	return 0, errors.New("nil TelegramValue")
 }
 
-func (to *TelegramObject) AsDateTime() (time.Time,error) {
-	v:=to.Value();
-	if (v!=nil  && v.Valid) {
+func (to *TelegramObject) AsDateTime() (time.Time, error) {
+	v := to.Value()
+	if v != nil && v.Valid {
 		return toTimestamp(v.Value)
 	}
-	return time.Now(),errors.New("nil TelegramValue");
+	return time.Now(), errors.New("nil TelegramValue")
 }
 
-func toTimestamp(s string) (time.Time,error) {
+func toTimestamp(s string) (time.Time, error) {
 	// Remove the DST indicator from the timestamp
 	rawDateTime := s[:len(s)-1]
-	if location, err := time.LoadLocation(GetTimeZone());err==nil {
-		if dateTime, err := time.ParseInLocation(P1DateTimeFormat, rawDateTime, location); err == nil {
-			return dateTime, nil;
+	if location, err := time.LoadLocation(GetTimeZone()); err == nil {
+		if dateTime, err := time.ParseInLocation(P1TimestampFormat, rawDateTime, location); err == nil {
+			return dateTime, nil
 		} else {
-			return time.Now(),err;
+			return time.Now(), err
 		}
 	} else {
-		return time.Now(),err;
+		return time.Now(), err
 	}
 }
 
-func (to *TelegramObject) AsBool() (bool,error) {
-	v:=to.Value();
-	if (v!=nil  && v.Valid) {
+func (to *TelegramObject) AsBool() (bool, error) {
+	v := to.Value()
+	if v != nil && v.Valid {
 		if b, err := strconv.ParseBool(v.Value); err == nil {
-			return b,nil;
+			return b, nil
 		} else {
-			return false,err
+			return false, err
 		}
 	}
-	return false,errors.New("nil TelegramValue");
+	return false, errors.New("nil TelegramValue")
 }
 
 func (to *TelegramObject) ToString() string {
-	v :=to.Value();
-	return fmt.Sprintf("%-15s: %s %s (%s) %s",to.Id,v.Value,to.Info.Unit,to.Info.Type,to.Info.Description)
+	v := to.Value()
+	return fmt.Sprintf("%-15s: %s %s (%s) %s", to.Id, v.Value, to.Info.Unit, to.Info.Type, to.Info.Description)
 }
 
 func GetTimeZone() string {
 	return "Europe/Brussels"
 }
-
-// OBISType represents the specific Object Identification System type of a P1
-// telegram line
-type OBISType string
-
-type OType struct {
-	Type string
-	Unit string
-	Description string
-}
-
-const (
-	String="string"
-	Hex="hex"
-	Float="float"
-	Bool="bool"
-	Integer="int"
-	Timestamp="time"
-
-)
-
-var OTypes=make(map[string]OType);
-
-// These are the OBIS types currently supported
-const (
-	OBISTypeNil                           = "NIL/Invalid type"
-	OBISTypeVersionInformation            = "Version Information"
-	OBISTypeDateTimestamp                 = "Date timestamp"
-	OBISTypeDeviceType                    = "Device Type"
-	OBISTypeEquipmentIdentifier           = "Equipment Identifier"
-	OBISTypeGasEquipmentIdentifier        = "Equipment Identifier (Gas)"
-	OBISTypeElectricityDeliveredTariff1   = "Electricity delivered to client (tariff 1)"
-	OBISTypeElectricityDeliveredTariff2   = "Electricity delivered to client (tariff 2)"
-	OBISTypeElectricityGeneratedTariff1   = "Electricity generated by client (tariff 1)"
-	OBISTypeElectricityGeneratedTariff2   = "Electricity generated by client (tariff 2)"
-	OBISTypeElectricityTariffIndicator    = "Electricity tariff indicator"
-	OBISTypeElectricityDelivered          = "Actual electricity delivered"
-	OBISTypeElectricityGenerated          = "Actual electricity generated"
-	OBISTypeNumberOfPowerFailures         = "Number of power failures on any phase"
-	OBISTypeNumberOfLongPowerFailures     = "Number of long power failures on any phase"
-	OBISTypePowerFailureEventLog          = "Event log for long power failures"
-	OBISTypeNumberOfVoltageSagsL1         = "Number of voltage sags on phase L1"
-	OBISTypeNumberOfVoltageSagsL2         = "Number of voltage sags on phase L2"
-	OBISTypeNumberOfVoltageSagsL3         = "Number of voltage sags on phase L3"
-	OBISTypeNumberOfVoltageSwellsL1       = "Number of voltage swells on phase L1"
-	OBISTypeNumberOfVoltageSwellsL2       = "Number of voltage swells on phase L2"
-	OBISTypeNumberOfVoltageSwellsL3       = "Number of voltage swells on phase L3"
-	OBISTypeTextMessage                   = "Text message"
-	OBISTypeInstantaneousVoltageL1        = "Instantaneous voltage on phase L1"
-	OBISTypeInstantaneousVoltageL2        = "Instantaneous voltage on phase L2"
-	OBISTypeInstantaneousVoltageL3        = "Instantaneous voltage on phase L3"
-	OBISTypeInstantaneousCurrentL1        = "Instantaneous current on phase L1"
-	OBISTypeInstantaneousCurrentL2        = "Instantaneous current on phase L2"
-	OBISTypeInstantaneousCurrentL3        = "Instantaneous current on phase L3"
-	OBISTypeInstantaneousPowerDeliveredL1 = "Instantaneous active power delivered on phase L1"
-	OBISTypeInstantaneousPowerDeliveredL2 = "Instantaneous active power delivered on phase L2"
-	OBISTypeInstantaneousPowerDeliveredL3 = "Instantaneous active power delivered on phase L3"
-	OBISTypeInstantaneousPowerGeneratedL1 = "Instantaneous active power generated on phase L1"
-	OBISTypeInstantaneousPowerGeneratedL2 = "Instantaneous active power generated on phase L2"
-	OBISTypeInstantaneousPowerGeneratedL3 = "Instantaneous active power generated on phase L3"
-	OBISTypeGasDelivered                  = "Actual gas delivered"
-)
-
-var (
-	allOBISTypes = map[string]OBISType{
-		"1-3:0.2.8":   OBISTypeVersionInformation,
-		"0-0:1.0.0":   OBISTypeDateTimestamp,
-		"0-0:96.1.1":  OBISTypeEquipmentIdentifier,
-		"1-0:1.8.1":   OBISTypeElectricityDeliveredTariff1,
-		"1-0:1.8.2":   OBISTypeElectricityDeliveredTariff2,
-		"1-0:2.8.1":   OBISTypeElectricityGeneratedTariff1,
-		"1-0:2.8.2":   OBISTypeElectricityGeneratedTariff2,
-		"0-0:96.14.0": OBISTypeElectricityTariffIndicator,
-		"1-0:1.7.0":   OBISTypeElectricityDelivered,
-		"1-0:2.7.0":   OBISTypeElectricityGenerated,
-		"0-0:96.7.21": OBISTypeNumberOfPowerFailures,
-		"0-0:96.7.9":  OBISTypeNumberOfLongPowerFailures,
-		"1-0:99.97.0": OBISTypePowerFailureEventLog,
-		"1-0:32.32.0": OBISTypeNumberOfVoltageSagsL1,
-		"1-0:52.32.0": OBISTypeNumberOfVoltageSagsL2,
-		"1-0:72.32.0": OBISTypeNumberOfVoltageSagsL3,
-		"1-0:32.36.0": OBISTypeNumberOfVoltageSwellsL1,
-		"1-0:52.36.0": OBISTypeNumberOfVoltageSwellsL2,
-		"1-0:72.36.0": OBISTypeNumberOfVoltageSwellsL3,
-		"0-0:96.13.0": OBISTypeTextMessage,
-		"1-0:32.7.0":  OBISTypeInstantaneousVoltageL1,
-		"1-0:52.7.0":  OBISTypeInstantaneousVoltageL2,
-		"1-0:72.7.0":  OBISTypeInstantaneousVoltageL3,
-		"1-0:31.7.0":  OBISTypeInstantaneousCurrentL1,
-		"1-0:51.7.0":  OBISTypeInstantaneousCurrentL2,
-		"1-0:71.7.0":  OBISTypeInstantaneousCurrentL3,
-		"1-0:21.7.0":  OBISTypeInstantaneousPowerDeliveredL1,
-		"1-0:41.7.0":  OBISTypeInstantaneousPowerDeliveredL2,
-		"1-0:61.7.0":  OBISTypeInstantaneousPowerDeliveredL3,
-		"1-0:22.7.0":  OBISTypeInstantaneousPowerGeneratedL1,
-		"1-0:42.7.0":  OBISTypeInstantaneousPowerGeneratedL2,
-		"1-0:62.7.0":  OBISTypeInstantaneousPowerGeneratedL3,
-	}
-
-	// In the specification, there are several OBIS types specified for slave
-	// devices as gas meters and such. These have variable OBIS IDs (first 2 digits)
-	// and this requires special treatment in the current way of parsing
-	addOBISTypes = map[string]OBISType{
-		`0-(\d+):96.1.0`: OBISTypeGasEquipmentIdentifier,
-		`0-(\d+):24.1.0`: OBISTypeDeviceType,
-		`0-(\d+):24.2.1`: OBISTypeGasDelivered,
-	}
-)
-
-var (
-	TypeInfo = map[string]OType{
-		//this is internal NIL OBIS Type
-		"0-0:0.0.0":   {String,"",OBISTypeNil},
-		//common OBIS types
-		"1-3:0.2.8":   {String,"",OBISTypeVersionInformation},
-		"0-0:1.0.0":   {Timestamp, "",OBISTypeDateTimestamp},
-		"0-0:96.1.1":  {String,"",OBISTypeEquipmentIdentifier},
-		"1-0:1.8.1":   {Float,"KWh",OBISTypeElectricityDeliveredTariff1},
-		"1-0:1.8.2":   {Float,"KWh",OBISTypeElectricityDeliveredTariff2},
-		"1-0:2.8.1":   {Float,"KWh",OBISTypeElectricityGeneratedTariff1 },
-		"1-0:2.8.2":   {Float,"KWh",OBISTypeElectricityGeneratedTariff2,},
-		"0-0:96.14.0": {Integer,"",OBISTypeElectricityTariffIndicator,},
-		"1-0:1.7.0":   {Float,"KW",OBISTypeElectricityDelivered,},
-		"1-0:2.7.0":   {Float,"KW",OBISTypeElectricityGenerated,},
-		"0-0:96.7.21": {Integer,"",OBISTypeNumberOfPowerFailures,},
-		"0-0:96.7.9":  {Integer,"",OBISTypeNumberOfLongPowerFailures,},
-		"1-0:99.97.0": {String,"",OBISTypePowerFailureEventLog,},
-		"1-0:32.32.0": {Integer,"",OBISTypeNumberOfVoltageSagsL1,},
-		"1-0:52.32.0": {Integer,"",OBISTypeNumberOfVoltageSagsL2,},
-		"1-0:72.32.0": {Integer,"",OBISTypeNumberOfVoltageSagsL3,},
-		"1-0:32.36.0": {Integer,"",OBISTypeNumberOfVoltageSwellsL1,},
-		"1-0:52.36.0": {Integer,"",OBISTypeNumberOfVoltageSwellsL2,},
-		"1-0:72.36.0": {Integer,"",OBISTypeNumberOfVoltageSwellsL3,},
-		"0-0:96.13.0": {Hex,"",OBISTypeTextMessage,},
-		"1-0:32.7.0":  {Float,"V",OBISTypeInstantaneousVoltageL1,},
-		"1-0:52.7.0":  {Float,"V",OBISTypeInstantaneousVoltageL2,},
-		"1-0:72.7.0":  {Float,"V",OBISTypeInstantaneousVoltageL3,},
-		"1-0:31.7.0":  {Float,"A",OBISTypeInstantaneousCurrentL1,},
-		"1-0:51.7.0":  {Float,"A",OBISTypeInstantaneousCurrentL2,},
-		"1-0:71.7.0":  {Float,"A",OBISTypeInstantaneousCurrentL3,},
-		"1-0:21.7.0":  {Float,"KW",OBISTypeInstantaneousPowerDeliveredL1,},
-		"1-0:41.7.0":  {Float,"KW",OBISTypeInstantaneousPowerDeliveredL2,},
-		"1-0:61.7.0":  {Float,"KW",OBISTypeInstantaneousPowerDeliveredL3,},
-		"1-0:22.7.0":  {Float,"KW",OBISTypeInstantaneousPowerGeneratedL1,},
-		"1-0:42.7.0":  {Float,"KW",OBISTypeInstantaneousPowerGeneratedL2,},
-		"1-0:62.7.0":  {Float,"KW",OBISTypeInstantaneousPowerGeneratedL3,},
-		//GAS to be verify
-		`0-1:96.1.0`: {Hex,"",OBISTypeGasEquipmentIdentifier,},
-		`0-1:24.1.0`: {Integer,"",OBISTypeDeviceType,},
-		`0-1:24.2.1`: {Float,"m3",OBISTypeGasDelivered,},
-	}
-)
-
-

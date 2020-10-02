@@ -18,8 +18,8 @@ var (
 // parsedTelegram parses lines from P1 data, or telegrams
 func ParseTelegram(lines []string) *Telegram {
 	tgram := NewTelegram()
-	tgram.Timestamp=time.Now();
-	tgram.Version="";
+	tgram.Timestamp = time.Now()
+	tgram.Version = ""
 
 	for _, l := range lines {
 		// try to detect identification header
@@ -29,21 +29,21 @@ func ParseTelegram(lines []string) *Telegram {
 			continue
 		}
 
-		if obj, err := ParseTelegramLine(strings.TrimSpace(l)); err==nil{
-			if _,exists := tgram.Objects[obj.Type]; exists==false {
+		if obj, err := ParseTelegramLine(strings.TrimSpace(l)); err == nil {
+			if _, exists := tgram.Objects[obj.Id]; exists == false {
 				//telegram timestamp
-				if (obj.Type==OBISTypeDateTimestamp) {
-					if t,err :=obj.AsDateTime();err==nil {
-						tgram.Timestamp=t;
+				if obj.Id == OBISTypeDateTimestamp {
+					if t, err := obj.AsDateTime(); err == nil {
+						tgram.Timestamp = t
 					}
 				}
-				if (obj.Type==OBISTypeVersionInformation) {
-					tgram.Version=obj.Value().Value;
+				if obj.Id == OBISTypeVersionInformation {
+					tgram.Version = obj.Value().Value
 				}
 				//store obj
-				tgram.Objects[obj.Type] = obj;
-			} else{
-				os.Stderr.WriteString("type already exist:");
+				tgram.Objects[obj.Id] = obj
+			} else {
+				os.Stderr.WriteString("type already exist:")
 			}
 		}
 	}
@@ -58,26 +58,12 @@ func ParseTelegramLine(line string) (*TelegramObject, error) {
 
 	var obj *TelegramObject
 	// is this a known COSEM object
-	if _, ok := allOBISTypes[matches[1]]; ok {
+	if i, ok := TypeInfo[matches[1]]; ok {
 		obj = &TelegramObject{
-			Id: matches[1],
-			Type: allOBISTypes[matches[1]],
-			Info: TypeInfo[matches[1]],
-		}
-	} else {
-		// try to match it to one of the additional types
-		for ptr, obisType := range addOBISTypes {
-			if regexp.MustCompile(ptr).MatchString(matches[1]) {
-				obj = &TelegramObject{
-					Id:matches[1],
-					Type: obisType,
-					Info: TypeInfo[matches[1]],
-				}
-				break
-			}
+			Id:   OBISId(matches[1]),
+			Info: i,
 		}
 	}
-
 	if obj == nil {
 		return nil, errCOSEMNoMatch
 	}
@@ -92,7 +78,7 @@ func ParseTelegramLine(line string) (*TelegramObject, error) {
 		} else {
 			ov.Value = v
 		}
-		ov.Valid=true;
+		ov.Valid = true
 		obj.Values = append(obj.Values, &ov)
 	}
 
