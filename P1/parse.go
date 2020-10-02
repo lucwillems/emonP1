@@ -2,6 +2,7 @@ package P1
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -37,14 +38,17 @@ func ParseTelegram(lines []string) *Telegram {
 						tgram.Timestamp = t
 					}
 				}
-				if obj.Id == OBISTypeVersionInformation {
+				if obj.Id == OBISTypeVersionInformation || obj.Id == OBISTypeBEVersionInfo {
 					tgram.Version = obj.Value().Value
 				}
 				//store obj
 				tgram.Objects[obj.Id] = obj
 			} else {
-				os.Stderr.WriteString("already exist: " + string(obj.Id))
+				fmt.Fprintf(os.Stderr, "Already exists: %s\n", obj.Id)
 			}
+		} else {
+			//fmt.Fprintf(os.Stderr,err.Error());
+			//fmt.Fprintf(os.Stderr,"\n%d: %s",n,l);
 		}
 	}
 	return tgram

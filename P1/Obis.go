@@ -16,6 +16,7 @@ const (
 	OBISTypeNil                           = "0-0:0.0.0"
 	OBISTypeDateTimestamp                 = "0-0:1.0.0"
 	OBISTypeEquipmentIdentifier           = "0-0:96.1.1"
+	OBISTypeBEVersionInfo                 = "0-0:96.1.4"
 	OBISTypeNumberOfPowerFailures         = "0-0:96.7.21"
 	OBISTypeNumberOfLongPowerFailures     = "0-0:96.7.9"
 	OBISTypeTextMessage                   = "0-0:96.13.0"
@@ -47,9 +48,12 @@ const (
 	OBISTypeNumberOfVoltageSagsL3         = "1-0:72.32.0"
 	OBISTypeVersionInformation            = "1-3:0.2.8"
 	//GAS to be verify
-	OBISTypeGasEquipmentIdentifier = "0-1:96.1.0"
-	OBISTypeGasDeviceType          = "0-1:24.1.0"
-	OBISTypeGasActualDelivered     = "0-1:24.2.1"
+	OBISTypeGasEquipmentIdentifier       = "0-1:96.1.0"
+	OBISTypeGasEquipmentIdentifierBE     = "0-1:96.1.1"
+	OBISTypeGasDeviceType                = "0-1:24.1.0"
+	OBISTypeGasTempCorrectedDelivered    = "0-1:24.2.1"
+	OBISTypeGasTempNotCorrectedDelivered = "0-1:24.2.3"
+	OBISTypeGasValveState                = "0-1:24.4.0"
 )
 
 type OType struct {
@@ -97,8 +101,11 @@ var (
 		OBISTypeInstantaneousPowerGeneratedL3: {Float, "KW", "Instantaneous active power generated on phase L3"},
 
 		//GAS to be verify
-		OBISTypeGasEquipmentIdentifier: {Hex, "", "Equipment Identifier"},
-		OBISTypeGasDeviceType:          {Integer, "", "Device Type"},
-		OBISTypeGasActualDelivered:     {Float, "m3", "Actual gas delivered"},
+		OBISTypeGasEquipmentIdentifier:       {Hex, "", "Equipment Identifier (NL)"},
+		OBISTypeGasEquipmentIdentifierBE:     {Hex, "", "Equipment Identifier (BE)"},
+		OBISTypeGasDeviceType:                {Integer, "", "Device Type"},
+		OBISTypeGasTempNotCorrectedDelivered: {Float, "m3", "Not temperature corrected volume gas delivered"},
+		OBISTypeGasTempCorrectedDelivered:    {Float, "m3", "Temperature corrected volume gas delivered"},
+		OBISTypeGasValveState:                {Integer, "", "Valve state"},
 	}
 )
