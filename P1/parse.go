@@ -12,8 +12,11 @@ import (
 var (
 	errCOSEMNoMatch     = errors.New("COSEM was no match")
 	telegramHeaderRegex = regexp.MustCompile(`^\/(.+)$`)
-	cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(?:\(([^\)]+)\))+$`)
-	cosemUnitRegex      = regexp.MustCompile(`^([\d\.]+)\*(?i)([a-z0-9]+)$`)
+	//cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(?:\(([^\)]+)\))+$`)
+	cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(.+)$`)
+	cosemValueUnitRegex = regexp.MustCompile(`^\(([\d\.]+)\*(?i)([a-z0-9]+)\)$`)
+	cosemValueRegex     = regexp.MustCompile(`^\(([a-zA-Z0-9]+)\)$`)
+	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}[WS]+)\)\(([\d\.]+)\*(?i)([a-z0-9]+)`)
 )
 
 // parsedTelegram parses lines from P1 data, or telegrams
@@ -39,7 +42,7 @@ func ParseTelegram(lines []string) *Telegram {
 					}
 				}
 				if obj.Id == OBISTypeVersionInformation || obj.Id == OBISTypeBEVersionInfo {
-					tgram.Version = obj.Value().Value
+					tgram.Version = obj.Value
 				}
 				//store obj
 				tgram.Objects[obj.Id] = obj
@@ -69,22 +72,35 @@ func ParseTelegramLine(line string) (*TelegramObject, error) {
 		}
 	}
 	if obj == nil {
+		fmt.Fprintf(os.Stderr, "unknown id: %s", matches[1])
 		return nil, errCOSEMNoMatch
 	}
+	var x = matches[2]
+	//preset common values
+	obj.Timestamp = time.Unix(0, 0) //epoch 0
+	obj.Unit = ""
 
-	for _, v := range matches[2:] {
-		ov := TelegramValue{}
-		// check if the unit of the value is specified as well
-		match := cosemUnitRegex.FindStringSubmatch(v)
-		if len(match) > 1 {
-			ov.Value = match[1]
-			ov.Unit = match[2]
-		} else {
-			ov.Value = v
-		}
-		ov.Valid = true
-		obj.Values = append(obj.Values, &ov)
+	//single (<value>) match ?
+	if match := cosemValueRegex.FindStringSubmatch(x); len(match) > 1 {
+		obj.Value = match[1]
+		return obj, nil
 	}
 
+	//single (<value>*<unit>) match ?
+	if match := cosemValueUnitRegex.FindStringSubmatch(x); len(match) > 1 {
+		obj.Value = match[1]
+		obj.Unit = match[2]
+		return obj, nil
+	}
+
+	if match := cosemMBusValueUnit.FindStringSubmatch(x); len(match) > 1 {
+		obj.Value = match[2]
+		obj.Unit = match[3]
+		obj.Timestamp = toTimestamp(match[1])
+		return obj, nil
+	}
+
+	//others ?
+	obj.Value = x
 	return obj, nil
 }

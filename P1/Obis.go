@@ -5,6 +5,7 @@ const (
 	String    = "string"
 	Hex       = "hex"
 	Float     = "float"
+	MBus      = "mbus"
 	Bool      = "bool"
 	Integer   = "int"
 	Timestamp = "time"
@@ -105,7 +106,7 @@ var (
 		OBISTypeGasEquipmentIdentifierBE:     {Hex, "", "Equipment Identifier (BE)"},
 		OBISTypeGasDeviceType:                {Integer, "", "Device Type"},
 		OBISTypeGasTempNotCorrectedDelivered: {Float, "m3", "Not temperature corrected volume gas delivered"},
-		OBISTypeGasTempCorrectedDelivered:    {Float, "m3", "Temperature corrected volume gas delivered"},
+		OBISTypeGasTempCorrectedDelivered:    {MBus, "m3", "Temperature corrected volume gas delivered"},
 		OBISTypeGasValveState:                {Integer, "", "Valve state"},
 	}
 )
