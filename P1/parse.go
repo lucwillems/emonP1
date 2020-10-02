@@ -1,4 +1,4 @@
-package gop1
+package P1
 
 import (
 	"errors"
@@ -43,7 +43,7 @@ func ParseTelegram(lines []string) *Telegram {
 				//store obj
 				tgram.Objects[obj.Id] = obj
 			} else {
-				os.Stderr.WriteString("type already exist:")
+				os.Stderr.WriteString("already exist: " + string(obj.Id))
 			}
 		}
 	}

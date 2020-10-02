@@ -1,4 +1,4 @@
-package gop1
+package P1
 
 import (
 	"encoding/hex"
@@ -171,5 +171,6 @@ func (to *TelegramObject) ToString() string {
 }
 
 func GetTimeZone() string {
+	//TODO : make config for this
 	return "Europe/Brussels"
 }

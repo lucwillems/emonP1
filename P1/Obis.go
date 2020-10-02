@@ -1,4 +1,4 @@
-package gop1
+package P1
 
 // variable types used by OBIS
 const (
