@@ -1,6 +1,6 @@
 package P1
 
-// variable types used by OBIS
+// variable types used by COSEM data
 const (
 	String    = "string"
 	Hex       = "hex"
