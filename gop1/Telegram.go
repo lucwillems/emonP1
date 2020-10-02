@@ -1,8 +1,10 @@
 package gop1
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -50,6 +52,18 @@ func (t *Telegram) Get(id OBISId) *TelegramObject {
 	return &x
 }
 
+func (t *Telegram) SortedIds() []string {
+	// To store the keys in slice in sorted order
+	keys := make([]string, t.Size())
+	i := 0
+	for k := range t.Objects {
+		keys[i] = string(k)
+		i++
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func (t *Telegram) Size() int {
 	return len(t.Objects)
 }
@@ -77,6 +91,17 @@ func (to *TelegramObject) Value() *TelegramValue {
 func (to *TelegramObject) AsString() (string, error) {
 	v := to.Value()
 	if v != nil && v.Valid {
+		if to.Info.Type == Timestamp {
+			if t, err := to.AsDateTime(); err == nil {
+				return t.Format(time.RFC3339), nil
+			} else {
+				return "", err
+			}
+		}
+		if to.Info.Type == Hex {
+			s, err := hex.DecodeString(v.Value)
+			return string(s), err
+		}
 		return v.Value, nil
 	}
 	return "", errors.New("nil or invalid value")
@@ -141,8 +166,8 @@ func (to *TelegramObject) AsBool() (bool, error) {
 }
 
 func (to *TelegramObject) ToString() string {
-	v := to.Value()
-	return fmt.Sprintf("%-15s: %s %s (%s) %s", to.Id, v.Value, to.Info.Unit, to.Info.Type, to.Info.Description)
+	s, _ := to.AsString()
+	return fmt.Sprintf("%-15s: %s %s (%s) %s", to.Id, s, to.Info.Unit, to.Info.Type, to.Info.Description)
 }
 
 func GetTimeZone() string {
