@@ -5,7 +5,8 @@ const (
 	String    = "string"
 	Hex       = "hex"
 	Float     = "float"
-	MBus      = "mbus"
+	MBusFloat = "mbus-float"
+	Logs      = "logs"
 	Bool      = "bool"
 	Integer   = "int"
 	Timestamp = "time"
@@ -80,7 +81,7 @@ var (
 		OBISTypeElectricityGenerated:          {Float, "KW", "Actual electricity generated"},
 		OBISTypeNumberOfPowerFailures:         {Integer, "", "Number of power failures on any phase"},
 		OBISTypeNumberOfLongPowerFailures:     {Integer, "", "Number of long power failures on any phase"},
-		OBISTypePowerFailureEventLog:          {String, "", "Event log for long power failures"},
+		OBISTypePowerFailureEventLog:          {Logs, "", "Event log for long power failures"},
 		OBISTypeNumberOfVoltageSagsL1:         {Integer, "", "Number of voltage sags on phase L1"},
 		OBISTypeNumberOfVoltageSagsL2:         {Integer, "", "Number of voltage sags on phase L2"},
 		OBISTypeNumberOfVoltageSagsL3:         {Integer, "", "Number of voltage sags on phase L3"},
@@ -106,7 +107,7 @@ var (
 		OBISTypeGasEquipmentIdentifierBE:     {Hex, "", "Equipment Identifier (BE)"},
 		OBISTypeGasDeviceType:                {Integer, "", "Device Type"},
 		OBISTypeGasTempNotCorrectedDelivered: {Float, "m3", "Not temperature corrected volume gas delivered"},
-		OBISTypeGasTempCorrectedDelivered:    {MBus, "m3", "Temperature corrected volume gas delivered"},
+		OBISTypeGasTempCorrectedDelivered:    {MBusFloat, "m3", "Temperature corrected volume gas delivered"},
 		OBISTypeGasValveState:                {Integer, "", "Valve state"},
 	}
 )

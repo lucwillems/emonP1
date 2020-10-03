@@ -19,11 +19,12 @@ func main() {
 	telegram := P1.ParseTelegram(lines)
 	fmt.Fprintf(os.Stdout, "Device: %s\n", telegram.Device)
 	fmt.Fprintf(os.Stdout, "version: %s\n", telegram.Version)
+	fmt.Fprintf(os.Stdout, "Failures: %d\n", telegram.Failures)
 	fmt.Fprintf(os.Stdout, "Objects: %d\n", telegram.Size())
 	fmt.Fprintf(os.Stdout, "timestamp: %s\n", telegram.Timestamp.Format(time.RFC3339))
 	for _, k := range telegram.SortedIds() {
 		o := telegram.Get(P1.OBISId(k))
-		fmt.Println(o.ToString())
+		fmt.Println(o)
 	}
 
 }
