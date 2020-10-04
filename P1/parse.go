@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -12,12 +13,11 @@ import (
 var (
 	errCOSEMNoMatch     = errors.New("line was no COSEM match")
 	telegramHeaderRegex = regexp.MustCompile(`^\/(.+)$`)
-	//cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(?:\(([^\)]+)\))+$`)
 	cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(.+)$`)
-	cosemValueUnitRegex = regexp.MustCompile(`^\(([\d\.]+)\*(?i)([a-z0-9]+)\)$`)
-	cosemValueRegex     = regexp.MustCompile(`^\(([a-zA-Z0-9]+)\)$`)
-	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}[WS]+)\)\(([\d\.]+)\*(?i)([a-z0-9]+)`)
-	cosemMBusValue      = regexp.MustCompile(`^\((\d{12}[WS]+)\)\(([\d\.]+)`)
+	cosemValueUnitRegex = regexp.MustCompile(`^\(([\w\.]+)(([\*\s])([\w]+))?\)$`)
+	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}\w)\)\(([\d\.]+)(([\*\s])([\w]+))?\)$`)
+	cosemLogDataRegex   = regexp.MustCompile(`^\((\d{0,2})\)\((\d+-\d+:\d+\.\d+\.\d+)\)(.+)$`)
+	cosemLogValueUnit   = regexp.MustCompile(`\(([\w\.]+)[\*\s]?([\w]+)?\)`)
 )
 
 // parsedTelegram parses lines from P1 data, or telegrams
@@ -78,6 +78,30 @@ func (data *TelegramData) handleCOSUMMBusValues(timestamp string, rawValue strin
 	return data, fmt.Errorf("%s: %w", data.Id, data.err)
 }
 
+func (data *TelegramData) handleCOSUMLog(numbers string, obisId string, logs string) (*TelegramData, error) {
+	data.rawValue = logs
+	data.Unit = ""
+	var n int64
+	if n, data.err = strconv.ParseInt(numbers, 10, 64); data.err != nil {
+		return data, fmt.Errorf("%s,%w", data.Id, data.err)
+	}
+	logData := LogData{}
+	logData.Id = OBISId(obisId)
+	logData.Logs = make([]*Log, n)
+	//we need to parse N logs here
+	if match := cosemLogValueUnit.FindAllStringSubmatch(logs, -1); len(match) == (int(n) * 2) {
+		for i := 0; i < int(n); i++ {
+			log := Log{}
+			log.Timestamp, logData.err = toTimestamp(match[i*2][1])
+			log.Value = match[(i*2)+1][1]
+			log.Unit = match[(i*2)+1][2]
+			logData.Logs[i] = &log
+		}
+	}
+	data.Value = logData
+	return data, nil
+}
+
 func ParseTelegramLine(line string) (*TelegramData, error) {
 	if line == "" {
 		return nil, nil
@@ -103,18 +127,14 @@ func ParseTelegramLine(line string) (*TelegramData, error) {
 	obj.Timestamp = time.Unix(0, 0) //epoch 0
 	obj.Unit = ""
 
-	if match := cosemValueRegex.FindStringSubmatch(x); len(match) > 1 {
-		//single (<value>) match ?
-		return obj.handleCOSUMValues(match[1], "")
-	} else if match := cosemValueUnitRegex.FindStringSubmatch(x); len(match) > 1 {
-		//single (<value>*<unit>) match ?
-		return obj.handleCOSUMValues(match[1], match[2])
+	if match := cosemValueUnitRegex.FindStringSubmatch(x); len(match) > 1 {
+		//single (<value>*<unit>) or (<value>) match ?
+		return obj.handleCOSUMValues(match[1], match[4])
 	} else if match := cosemMBusValueUnit.FindStringSubmatch(x); len(match) > 1 {
-		//MBus (<TST>)(<value>*<unit>) match ?
-		return obj.handleCOSUMMBusValues(match[1], match[2], match[3])
-	} else if match := cosemMBusValue.FindStringSubmatch(x); len(match) > 1 {
-		//MBus (<TST>)(<value>) match ?
-		return obj.handleCOSUMMBusValues(match[1], match[2], "")
+		//MBus (<TST>)(<value>*<unit>) or (<TST>)(<value>) match ?
+		return obj.handleCOSUMMBusValues(match[1], match[2], match[5])
+	} else if match := cosemLogDataRegex.FindStringSubmatch(x); len(match) > 1 {
+		return obj.handleCOSUMLog(match[1], match[2], match[3])
 	} else {
 		obj.rawValue = x
 		return obj, obj.err

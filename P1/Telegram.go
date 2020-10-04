@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const P1TimestampFormat = "060102150405"
+const P1TimestampFormat = "060102150405" //YYmmddHHMMSS
 
 type Telegram struct {
 	Device    string
@@ -34,6 +34,32 @@ type TelegramData struct {
 	info     OType
 	rawValue string
 	err      error
+}
+
+type Log struct {
+	Timestamp time.Time
+	Value     interface{}
+	Unit      string
+	err       error
+}
+
+type LogData struct {
+	Id   OBISId
+	Logs []*Log
+	err  error
+}
+
+func (log *Log) String() string {
+	return fmt.Sprintf("%s: %s %s", log.Timestamp, log.Value, log.Unit)
+}
+func (log *Log) IsValid() bool {
+	return log.err == nil
+}
+func (logData *LogData) String() string {
+	return fmt.Sprintf("%s [%d] : %s", logData.Id, len(logData.Logs), logData.Logs)
+}
+func (logData *LogData) IsValid() bool {
+	return logData.err == nil
 }
 
 type TST string
@@ -81,6 +107,13 @@ func (to *TelegramData) AsString() (string, error) {
 	if to.info.Type == Hex {
 		s, err := hex.DecodeString(to.rawValue)
 		return string(s), err
+	}
+	if to.info.Type == Logs {
+		if to.Value != nil {
+			logData := to.Value.(LogData)
+			return logData.String(), nil
+		}
+		return ``, nil
 	}
 	return to.rawValue, nil
 }

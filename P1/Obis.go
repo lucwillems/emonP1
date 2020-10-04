@@ -30,6 +30,7 @@ const (
 	OBISTypeElectricityGeneratedTariff1   = "1-0:2.8.1"
 	OBISTypeElectricityGeneratedTariff2   = "1-0:2.8.2"
 	OBISTypePowerFailureEventLog          = "1-0:99.97.0"
+	OBISTypePowerFailureEventTestLog      = "1-0:99.97.1"
 	OBISTypeInstantaneousPowerDeliveredL1 = "1-0:21.7.0"
 	OBISTypeInstantaneousPowerGeneratedL1 = "1-0:22.7.0"
 	OBISTypeInstantaneousCurrentL1        = "1-0:31.7.0"
@@ -82,6 +83,7 @@ var (
 		OBISTypeNumberOfPowerFailures:         {Integer, "", "Number of power failures on any phase"},
 		OBISTypeNumberOfLongPowerFailures:     {Integer, "", "Number of long power failures on any phase"},
 		OBISTypePowerFailureEventLog:          {Logs, "", "Event log for long power failures"},
+		OBISTypePowerFailureEventTestLog:      {Logs, "", "Test empty event logs"},
 		OBISTypeNumberOfVoltageSagsL1:         {Integer, "", "Number of voltage sags on phase L1"},
 		OBISTypeNumberOfVoltageSagsL2:         {Integer, "", "Number of voltage sags on phase L2"},
 		OBISTypeNumberOfVoltageSagsL3:         {Integer, "", "Number of voltage sags on phase L3"},
