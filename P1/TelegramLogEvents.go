@@ -13,9 +13,11 @@ type Log struct {
 }
 
 type LogData struct {
-	Id   OBISId
-	Logs []*Log
-	err  error
+	Id       OBISId
+	Logs     []*Log
+	info     OType
+	rawValue string
+	err      error
 }
 
 func (log *Log) String() string {

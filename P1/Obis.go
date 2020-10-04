@@ -19,8 +19,9 @@ const (
 	OBISTypeDateTimestamp                 = "0-0:1.0.0"
 	OBISTypeEquipmentIdentifier           = "0-0:96.1.1"
 	OBISTypeBEVersionInfo                 = "0-0:96.1.4"
-	OBISTypeNumberOfPowerFailures         = "0-0:96.7.21"
 	OBISTypeNumberOfLongPowerFailures     = "0-0:96.7.9"
+	OBISTypeDurationPowerFailureAnyPhase  = "0-0:96.7.19"
+	OBISTypeNumberOfPowerFailures         = "0-0:96.7.21"
 	OBISTypeTextMessage                   = "0-0:96.13.0"
 	OBISTypeElectricityTariffIndicator    = "0-0:96.14.0"
 	OBISTypeElectricityDelivered          = "1-0:1.7.0"
@@ -82,6 +83,7 @@ var (
 		OBISTypeElectricityGenerated:          {Float, "KW", "Actual electricity generated"},
 		OBISTypeNumberOfPowerFailures:         {Integer, "", "Number of power failures on any phase"},
 		OBISTypeNumberOfLongPowerFailures:     {Integer, "", "Number of long power failures on any phase"},
+		OBISTypeDurationPowerFailureAnyPhase:  {Integer, "s", "Duration of long power failures on any phase"},
 		OBISTypePowerFailureEventLog:          {Logs, "", "Event log for long power failures"},
 		OBISTypePowerFailureEventTestLog:      {Logs, "", "Test empty event logs"},
 		OBISTypeNumberOfVoltageSagsL1:         {Integer, "", "Number of voltage sags on phase L1"},

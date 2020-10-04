@@ -88,21 +88,30 @@ func (td *TelegramData) handleCOSUMLog(numbers string, obisId string, logs strin
 	if n, td.err = strconv.ParseInt(numbers, 10, 64); td.err != nil {
 		return td, fmt.Errorf("%s,%w", td.Id, td.err)
 	}
-	logData := LogData{}
-	logData.Id = OBISId(obisId)
-	logData.Logs = make([]*Log, n)
-	//we need td parse N logs here
-	if match := cosemLogValueUnit.FindAllStringSubmatch(logs, -1); len(match) == (int(n) * 2) {
-		for i := 0; i < int(n); i++ {
-			log := Log{}
-			log.Timestamp, logData.err = toTimestamp(match[i*2][1])
-			log.Value, log.err = convert(match[(i*2)+1][1], Float)
-			log.Unit = match[(i*2)+1][2]
-			logData.Logs[i] = &log
+
+	if i, ok := TypeInfo[obisId]; ok == true {
+		logData := LogData{}
+		logData.Id = OBISId(obisId)
+		logData.Logs = make([]*Log, n)
+		logData.info = i
+		logData.err = nil
+		logData.rawValue = logs
+
+		//we need td parse N logs here
+		if match := cosemLogValueUnit.FindAllStringSubmatch(logs, -1); len(match) == (int(n) * 2) {
+			for i := 0; i < int(n); i++ {
+				log := Log{}
+				log.Timestamp, logData.err = toTimestamp(match[i*2][1])
+				log.Value, log.err = convert(match[(i*2)+1][1], logData.info.Type)
+				log.Unit = match[(i*2)+1][2]
+				logData.Logs[i] = &log
+			}
 		}
+		td.Value = logData
+		return td, nil
+	} else {
+		return nil, errors.New(obisId + ": unknown log event OBIS id")
 	}
-	td.Value = logData
-	return td, nil
 }
 
 func ParseTelegramLine(line string) (*TelegramData, error) {
