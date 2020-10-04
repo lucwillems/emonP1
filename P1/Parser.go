@@ -1,6 +1,7 @@
 package P1
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -12,12 +13,12 @@ import (
 
 var (
 	errCOSEMNoMatch     = errors.New("line was no COSEM match")
-	telegramHeaderRegex = regexp.MustCompile(`^\/(.+)$`)
+	telegramHeaderRegex = regexp.MustCompile(`^/(.+)$`)
 	cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(.+)$`)
-	cosemValueUnitRegex = regexp.MustCompile(`^\(([\w\.]+)(([\*\s])([\w]+))?\)$`)
-	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}\w)\)\(([\d\.]+)(([\*\s])([\w]+))?\)$`)
+	cosemValueUnitRegex = regexp.MustCompile(`^\(([\w.]+)(([*\s])([\w]+))?\)$`)
+	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}\w)\)\(([\d.]+)(([*\s])([\w]+))?\)$`)
 	cosemLogDataRegex   = regexp.MustCompile(`^\((\d{0,2})\)\((\d+-\d+:\d+\.\d+\.\d+)\)(.+)$`)
-	cosemLogValueUnit   = regexp.MustCompile(`\(([\w\.]+)[\*\s]?([\w]+)?\)`)
+	cosemLogValueUnit   = regexp.MustCompile(`\(([\w.]+)[*\s]?([\w]+)?\)`)
 )
 
 // parsedTelegram parses lines from P1 data, or telegrams
@@ -27,6 +28,10 @@ func ParseTelegram(lines []string) *Telegram {
 	tgram.Version = ""
 
 	for n, l := range lines {
+		//skip empty lines
+		if len(l) == 0 {
+			continue
+		}
 		// try to detect identification header
 		match := telegramHeaderRegex.FindStringSubmatch(l)
 		if len(match) > 0 {
@@ -38,12 +43,10 @@ func ParseTelegram(lines []string) *Telegram {
 			if _, exists := tgram.Objects[obj.Id]; exists == false {
 				//telegram timestamp
 				if obj.Id == OBISTypeDateTimestamp {
-					if t, err := obj.AsDateTime(); err == nil {
-						tgram.Timestamp = t
-					}
+					obj.Timestamp = obj.Value.(time.Time)
 				}
 				if obj.Id == OBISTypeVersionInformation || obj.Id == OBISTypeBEVersionInfo {
-					tgram.Version = obj.rawValue
+					tgram.Version = obj.Value.(string)
 				}
 				//store obj
 				tgram.Objects[obj.Id] = obj
@@ -61,51 +64,48 @@ func ParseTelegram(lines []string) *Telegram {
 	return tgram
 }
 
-func (data *TelegramData) handleCOSUMValues(rawValue string, unit string) (*TelegramData, error) {
-	data.rawValue = rawValue
-	data.Unit = unit
-	convert(data)
-	return data, data.err
+func (td *TelegramData) handleCOSUMValues(rawValue string, unit string) (*TelegramData, error) {
+	td.rawValue = rawValue
+	td.Unit = unit
+	td.Value, td.err = convert(td.rawValue, td.info.Type)
+	return td, td.err
 }
 
-func (data *TelegramData) handleCOSUMMBusValues(timestamp string, rawValue string, unit string) (*TelegramData, error) {
-	data.rawValue = rawValue
-	data.Unit = unit
-	if data.Timestamp, data.err = toTimestamp(timestamp); data.err == nil {
-		convert(data)
-		return data, nil
+func (td *TelegramData) handleCOSUMMBusValues(timestamp string, rawValue string, unit string) (*TelegramData, error) {
+	td.rawValue = rawValue
+	td.Unit = unit
+	if td.Timestamp, td.err = toTimestamp(timestamp); td.err == nil {
+		td.Value, td.err = convert(rawValue, td.info.Type)
+		return td, nil
 	}
-	return data, fmt.Errorf("%s: %w", data.Id, data.err)
+	return td, fmt.Errorf("%s: %w", td.Id, td.err)
 }
 
-func (data *TelegramData) handleCOSUMLog(numbers string, obisId string, logs string) (*TelegramData, error) {
-	data.rawValue = logs
-	data.Unit = ""
+func (td *TelegramData) handleCOSUMLog(numbers string, obisId string, logs string) (*TelegramData, error) {
+	td.rawValue = logs
+	td.Unit = ""
 	var n int64
-	if n, data.err = strconv.ParseInt(numbers, 10, 64); data.err != nil {
-		return data, fmt.Errorf("%s,%w", data.Id, data.err)
+	if n, td.err = strconv.ParseInt(numbers, 10, 64); td.err != nil {
+		return td, fmt.Errorf("%s,%w", td.Id, td.err)
 	}
 	logData := LogData{}
 	logData.Id = OBISId(obisId)
 	logData.Logs = make([]*Log, n)
-	//we need to parse N logs here
+	//we need td parse N logs here
 	if match := cosemLogValueUnit.FindAllStringSubmatch(logs, -1); len(match) == (int(n) * 2) {
 		for i := 0; i < int(n); i++ {
 			log := Log{}
 			log.Timestamp, logData.err = toTimestamp(match[i*2][1])
-			log.Value = match[(i*2)+1][1]
+			log.Value, log.err = convert(match[(i*2)+1][1], Float)
 			log.Unit = match[(i*2)+1][2]
 			logData.Logs[i] = &log
 		}
 	}
-	data.Value = logData
-	return data, nil
+	td.Value = logData
+	return td, nil
 }
 
 func ParseTelegramLine(line string) (*TelegramData, error) {
-	if line == "" {
-		return nil, nil
-	}
 	matches := cosemOBISRegex.FindStringSubmatch(line)
 	if len(matches) != 3 {
 		return nil, errCOSEMNoMatch
@@ -160,22 +160,21 @@ func toTimestamp(s string) (time.Time, error) {
 	}
 }
 
-func convert(o *TelegramData) error {
-	if o.info.Type == Timestamp {
-		o.Value, o.err = o.AsDateTime()
-		return o.err
+func convert(rawData string, dataType string) (interface{}, error) {
+	if dataType == Timestamp {
+		return toTimestamp(rawData)
+	} else if dataType == Integer {
+		return strconv.ParseInt(rawData, 10, 64)
+	} else if dataType == Float || dataType == MBusFloat {
+		return strconv.ParseFloat(rawData, 64)
+	} else if dataType == Hex {
+		s, err := hex.DecodeString(rawData)
+		return string(s), err
+	} else if dataType == Bool {
+		return strconv.ParseBool(rawData)
+	} else if dataType == String {
+		return rawData, nil
+	} else {
+		return rawData, nil
 	}
-	if o.info.Type == Integer {
-		o.Value, o.err = o.AsInt()
-		return o.err
-	}
-	if o.info.Type == Float || o.info.Type == MBusFloat {
-		o.Value, o.err = o.AsFloat()
-		return o.err
-	}
-	if o.info.Type == Hex || o.info.Type == String {
-		o.Value, o.err = o.AsString()
-		return o.err
-	}
-	return nil
 }
