@@ -13,7 +13,7 @@ type Log struct {
 }
 
 type LogData struct {
-	Id       OBISId
+	Id       string
 	Logs     []*Log
 	info     OType
 	rawValue string

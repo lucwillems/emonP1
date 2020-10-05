@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"scm.t-m-m.be/emonP1/P1"
+	"sort"
 	"strings"
 	"time"
 )
@@ -22,8 +23,10 @@ func main() {
 	fmt.Fprintf(os.Stdout, "Failures: %d\n", telegram.Failures)
 	fmt.Fprintf(os.Stdout, "Objects: %d\n", telegram.Size())
 	fmt.Fprintf(os.Stdout, "timestamp: %s\n", telegram.Timestamp.Format(time.RFC3339))
-	for _, k := range telegram.SortedIds() {
-		o := telegram.Get(P1.OBISId(k))
+	ids := telegram.OBISIds()
+	sort.Strings(ids)
+	for _, k := range ids {
+		o, _ := telegram.Get(k)
 		fmt.Println(o)
 	}
 

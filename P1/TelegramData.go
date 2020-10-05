@@ -7,7 +7,7 @@ import (
 
 // TelegramData is the structured representation of a single line in a P1 data
 type TelegramData struct {
-	Id        OBISId
+	Id        string
 	Value     interface{} //holds the converted values from string -> int64/float64/time..
 	Unit      string
 	Timestamp time.Time

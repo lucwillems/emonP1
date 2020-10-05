@@ -1,7 +1,6 @@
 package P1
 
 import (
-	"sort"
 	"time"
 )
 
@@ -12,28 +11,24 @@ type Telegram struct {
 	Version   string
 	Timestamp time.Time
 	Failures  int
-	Objects   map[OBISId]*TelegramData
+	Objects   map[string]*TelegramData
 }
 
 func NewTelegram() *Telegram {
 	var t Telegram
-	t.Objects = make(map[OBISId]*TelegramData)
+	t.Objects = make(map[string]*TelegramData)
 	return &t
 }
 
-func (t *Telegram) Get(id OBISId) *TelegramData {
+func (t *Telegram) Get(id string) (*TelegramData, bool) {
 	if i, ok := t.Objects[id]; ok == true {
-		return i
+		return i, true
 	}
 	//nil object
-	x := TelegramData{}
-	x.Id = OBISTypeNil
-	x.Value = nil
-	x.info = TypeInfo[OBISTypeNil]
-	return &x
+	return nil, false
 }
 
-func (t *Telegram) SortedIds() []string {
+func (t *Telegram) OBISIds() []string {
 	// To store the keys in slice in sorted order
 	keys := make([]string, t.Size())
 	i := 0
@@ -41,14 +36,13 @@ func (t *Telegram) SortedIds() []string {
 		keys[i] = string(k)
 		i++
 	}
-	sort.Strings(keys)
 	return keys
 }
 
 func (t *Telegram) Size() int {
 	return len(t.Objects)
 }
-func (t *Telegram) Has(id OBISId) bool {
+func (t *Telegram) Has(id string) bool {
 	_, ok := t.Objects[id]
 	return ok
 }

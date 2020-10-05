@@ -91,7 +91,7 @@ func (td *TelegramData) handleCOSUMLog(numbers string, obisId string, logs strin
 
 	if i, ok := TypeInfo[obisId]; ok == true {
 		logData := LogData{}
-		logData.Id = OBISId(obisId)
+		logData.Id = obisId
 		logData.Logs = make([]*Log, n)
 		logData.info = i
 		logData.err = nil
@@ -124,7 +124,7 @@ func ParseTelegramLine(line string) (*TelegramData, error) {
 	// is this a known COSEM object
 	if i, ok := TypeInfo[matches[1]]; ok {
 		obj = &TelegramData{
-			Id:   OBISId(matches[1]),
+			Id:   matches[1],
 			info: i,
 		}
 	} else {

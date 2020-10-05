@@ -12,8 +12,6 @@ const (
 	Timestamp = "time"
 )
 
-type OBISId string
-
 const (
 	OBISTypeNil                           = "0-0:0.0.0"
 	OBISTypeDateTimestamp                 = "0-0:1.0.0"
