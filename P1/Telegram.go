@@ -11,16 +11,16 @@ type Telegram struct {
 	Version   string
 	Timestamp time.Time
 	Failures  int
-	Objects   map[string]*TelegramData
+	Objects   map[string]*COSEMInstance
 }
 
 func NewTelegram() *Telegram {
 	var t Telegram
-	t.Objects = make(map[string]*TelegramData)
+	t.Objects = make(map[string]*COSEMInstance)
 	return &t
 }
 
-func (t *Telegram) Get(id string) (*TelegramData, bool) {
+func (t *Telegram) Get(id string) (*COSEMInstance, bool) {
 	if i, ok := t.Objects[id]; ok == true {
 		return i, true
 	}

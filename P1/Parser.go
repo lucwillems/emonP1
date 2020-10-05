@@ -64,16 +64,14 @@ func ParseTelegram(lines []string) *Telegram {
 	return tgram
 }
 
-func (td *TelegramData) handleCOSUMValues(rawValue string, unit string) (*TelegramData, error) {
+func (td *COSEMInstance) handleCOSUMValues(rawValue string) (*COSEMInstance, error) {
 	td.rawValue = rawValue
-	td.Unit = unit
 	td.Value, td.err = convert(td.rawValue, td.info.Type)
 	return td, td.err
 }
 
-func (td *TelegramData) handleCOSUMMBusValues(timestamp string, rawValue string, unit string) (*TelegramData, error) {
+func (td *COSEMInstance) handleCOSUMMBusValues(timestamp string, rawValue string) (*COSEMInstance, error) {
 	td.rawValue = rawValue
-	td.Unit = unit
 	if td.Timestamp, td.err = toTimestamp(timestamp); td.err == nil {
 		td.Value, td.err = convert(rawValue, td.info.Type)
 		return td, nil
@@ -81,9 +79,8 @@ func (td *TelegramData) handleCOSUMMBusValues(timestamp string, rawValue string,
 	return td, fmt.Errorf("%s: %w", td.Id, td.err)
 }
 
-func (td *TelegramData) handleCOSUMLog(numbers string, obisId string, logs string) (*TelegramData, error) {
+func (td *COSEMInstance) handleCOSUMLog(numbers string, obisId string, logs string) (*COSEMInstance, error) {
 	td.rawValue = logs
-	td.Unit = ""
 	var n int64
 	if n, td.err = strconv.ParseInt(numbers, 10, 64); td.err != nil {
 		return td, fmt.Errorf("%s,%w", td.Id, td.err)
@@ -103,7 +100,6 @@ func (td *TelegramData) handleCOSUMLog(numbers string, obisId string, logs strin
 				log := Log{}
 				log.Timestamp, logData.err = toTimestamp(match[i*2][1])
 				log.Value, log.err = convert(match[(i*2)+1][1], logData.info.Type)
-				log.Unit = match[(i*2)+1][2]
 				logData.Logs[i] = &log
 			}
 		}
@@ -114,16 +110,16 @@ func (td *TelegramData) handleCOSUMLog(numbers string, obisId string, logs strin
 	}
 }
 
-func ParseTelegramLine(line string) (*TelegramData, error) {
+func ParseTelegramLine(line string) (*COSEMInstance, error) {
 	matches := cosemOBISRegex.FindStringSubmatch(line)
 	if len(matches) != 3 {
 		return nil, errCOSEMNoMatch
 	}
 
-	var obj *TelegramData
+	var obj *COSEMInstance
 	// is this a known COSEM object
 	if i, ok := TypeInfo[matches[1]]; ok {
-		obj = &TelegramData{
+		obj = &COSEMInstance{
 			Id:   matches[1],
 			info: i,
 		}
@@ -134,14 +130,12 @@ func ParseTelegramLine(line string) (*TelegramData, error) {
 	var x = matches[2]
 	//preset common values
 	obj.Timestamp = time.Unix(0, 0) //epoch 0
-	obj.Unit = ""
-
 	if match := cosemValueUnitRegex.FindStringSubmatch(x); len(match) > 1 {
 		//single (<value>*<unit>) or (<value>) match ?
-		return obj.handleCOSUMValues(match[1], match[4])
+		return obj.handleCOSUMValues(match[1])
 	} else if match := cosemMBusValueUnit.FindStringSubmatch(x); len(match) > 1 {
 		//MBus (<TST>)(<value>*<unit>) or (<TST>)(<value>) match ?
-		return obj.handleCOSUMMBusValues(match[1], match[2], match[5])
+		return obj.handleCOSUMMBusValues(match[1], match[2])
 	} else if match := cosemLogDataRegex.FindStringSubmatch(x); len(match) > 1 {
 		return obj.handleCOSUMLog(match[1], match[2], match[3])
 	} else {

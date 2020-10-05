@@ -8,7 +8,6 @@ import (
 type Log struct {
 	Timestamp time.Time
 	Value     interface{}
-	Unit      string
 	err       error
 }
 
@@ -22,7 +21,7 @@ type LogData struct {
 
 func (log *Log) String() string {
 	s := fmt.Sprint(log.Value)
-	return fmt.Sprintf("%s: %s %s", log.Timestamp, s, log.Unit)
+	return fmt.Sprintf("%s: %s", log.Timestamp, s)
 }
 func (log *Log) IsValid() bool {
 	return log.err == nil

@@ -5,11 +5,10 @@ import (
 	"time"
 )
 
-// TelegramData is the structured representation of a single line in a P1 data
-type TelegramData struct {
+// COSEMInstance is the structured representation of a single line in a P1 data
+type COSEMInstance struct {
 	Id        string
 	Value     interface{} //holds the converted values from string -> int64/float64/time..
-	Unit      string
 	Timestamp time.Time
 	//internal state data
 	info     OType
@@ -17,11 +16,11 @@ type TelegramData struct {
 	err      error
 }
 
-func (td *TelegramData) IsValid() (bool, error) {
+func (td *COSEMInstance) IsValid() (bool, error) {
 	return td.err == nil, td.err
 }
 
-func (td *TelegramData) String() string {
+func (td *COSEMInstance) String() string {
 	s := fmt.Sprint(td.Value)
 	return fmt.Sprintf("%-15s: %s %s (%s) %s", td.Id, s, td.info.Unit, td.info.Type, td.info.Description)
 }
