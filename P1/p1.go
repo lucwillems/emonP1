@@ -1,4 +1,4 @@
-package gop1
+package P1
 
 import (
 	"bufio"
@@ -81,4 +81,3 @@ func (p *P1) readData() {
 		p.Incoming <- ParseTelegram(lines)
 	}
 }
-
