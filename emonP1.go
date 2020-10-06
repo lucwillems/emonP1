@@ -6,7 +6,6 @@ import (
 	"os"
 	"scm.t-m-m.be/emonP1/P1"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -16,8 +15,7 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	lines := strings.Split(string(message), "\n")
-	telegram := P1.ParseTelegram(lines)
+	telegram := P1.Parse(string(message))
 	fmt.Fprintf(os.Stdout, "Device: %s\n", telegram.Device)
 	fmt.Fprintf(os.Stdout, "version: %s\n", telegram.Version)
 	fmt.Fprintf(os.Stdout, "Failures: %d\n", telegram.Failures)

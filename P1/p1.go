@@ -2,7 +2,6 @@ package P1
 
 import (
 	"bufio"
-	"strings"
 	"time"
 
 	"github.com/tarm/serial"
@@ -61,23 +60,10 @@ func (p *P1) readData() {
 	reader := bufio.NewReader(p.serialDevice)
 
 	for {
-		// telegram data is suffixed with a CRC code
-		// this CRC code starts with ! so let's read until we receive that char
-		message, err := reader.ReadString('\x21') // hex char code for !
+		message, err := reader.ReadString('\x21') // checksum !
 		if err != nil {
 			continue
 		}
-
-		/*
-			// we're currently not processing the CRC itself, but let's read that as well
-			// from the CRC, we assume the first carriage return is the end of the CRC
-			_, err = reader.ReadString('\x0d') // hex char for CR
-			if err != nil {
-				continue
-			}
-		*/
-
-		lines := strings.Split(message, "\n")
-		p.Incoming <- ParseTelegram(lines)
+		p.Incoming <- Parse(message)
 	}
 }

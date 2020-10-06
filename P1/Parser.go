@@ -22,7 +22,9 @@ var (
 )
 
 // parsedTelegram parses lines from P1 data, or telegrams
-func ParseTelegram(lines []string) *Telegram {
+func Parse(message string) *Telegram {
+	lines := strings.Split(message, "\n")
+
 	tgram := NewTelegram()
 	tgram.Timestamp = time.Now()
 	tgram.Version = ""
