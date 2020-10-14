@@ -14,6 +14,7 @@ import (
 var (
 	errCOSEMNoMatch     = errors.New("line was no COSEM match")
 	telegramHeaderRegex = regexp.MustCompile(`^/(.+)$`)
+	checksumRegex       = regexp.MustCompile(`^!(.+)$`)
 	cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(.+)$`)
 	cosemValueUnitRegex = regexp.MustCompile(`^\(([\w.]+)(([*\s])([\w]+))?\)$`)
 	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}\w)\)\(([\d.]+)(([*\s])([\w]+))?\)$`)
@@ -34,10 +35,18 @@ func Parse(message string) *Telegram {
 		if len(l) == 0 {
 			continue
 		}
+
 		// try to detect identification header
 		match := telegramHeaderRegex.FindStringSubmatch(l)
 		if len(match) > 0 {
 			tgram.Device = match[1]
+			continue
+		}
+
+		// try to detect checksum
+		match = checksumRegex.FindStringSubmatch(l)
+		if len(match) > 0 {
+			tgram.Checksum = match[1]
 			continue
 		}
 

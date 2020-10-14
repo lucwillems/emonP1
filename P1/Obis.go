@@ -49,9 +49,12 @@ const (
 	OBISTypeNumberOfVoltageSwellsL3       = "1-0:72.36.0"
 	OBISTypeNumberOfVoltageSagsL3         = "1-0:72.32.0"
 	OBISTypeVersionInformation            = "1-3:0.2.8"
+	OBISTypeLimiterThreshold              = "0-0:17.0.0"
+	OBISTypeFuseThreshold                 = "1-0:31.4.0"
 	//GAS to be verify
 	OBISTypeGasEquipmentIdentifier       = "0-1:96.1.0"
 	OBISTypeGasEquipmentIdentifierBE     = "0-1:96.1.1"
+	OBISTypeBreakStateBE                 = "0-0:96.3.10"
 	OBISTypeGasDeviceType                = "0-1:24.1.0"
 	OBISTypeGasTempCorrectedDelivered    = "0-1:24.2.1"
 	OBISTypeGasTempNotCorrectedDelivered = "0-1:24.2.3"
@@ -70,6 +73,7 @@ var (
 		OBISTypeNil: {String, "", "NIL/Invalid type"},
 		//common OBIS types
 		OBISTypeVersionInformation:            {String, "", "Version Information"},
+		OBISTypeBEVersionInfo:                 {String, "", "Version Information (BE)"},
 		OBISTypeDateTimestamp:                 {Timestamp, "", "Date timestamp"},
 		OBISTypeEquipmentIdentifier:           {Hex, "", "Equipment Identifier"},
 		OBISTypeElectricityDeliveredTariff1:   {Float, "kWh", "Electricity delivered to client (tariff 1)"},
@@ -103,7 +107,9 @@ var (
 		OBISTypeInstantaneousPowerGeneratedL1: {Float, "kW", "Instantaneous active power generated on phase L1"},
 		OBISTypeInstantaneousPowerGeneratedL2: {Float, "kW", "Instantaneous active power generated on phase L2"},
 		OBISTypeInstantaneousPowerGeneratedL3: {Float, "kW", "Instantaneous active power generated on phase L3"},
-
+		OBISTypeBreakStateBE:                  {Bool, "", "Breaker state"},
+		OBISTypeLimiterThreshold:              {Float, "kW", "Limiter threshold"},
+		OBISTypeFuseThreshold:                 {Float, "A", "Fuse threshold"},
 		//GAS to be verify
 		OBISTypeGasEquipmentIdentifier:       {Hex, "", "Equipment Identifier (NL)"},
 		OBISTypeGasEquipmentIdentifierBE:     {Hex, "", "Equipment Identifier (BE)"},

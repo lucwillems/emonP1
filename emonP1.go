@@ -11,12 +11,13 @@ import (
 
 func main() {
 
-	message, err := ioutil.ReadFile("test/data")
+	message, err := ioutil.ReadFile("test/janlindaP1.log")
 	if err != nil {
 		os.Exit(1)
 	}
 	telegram := P1.Parse(string(message))
 	fmt.Fprintf(os.Stdout, "Device: %s\n", telegram.Device)
+	fmt.Fprintf(os.Stdout, "Checksum: %s\n", telegram.Checksum)
 	fmt.Fprintf(os.Stdout, "version: %s\n", telegram.Version)
 	fmt.Fprintf(os.Stdout, "Failures: %d\n", telegram.Failures)
 	fmt.Fprintf(os.Stdout, "Objects: %d\n", telegram.Size())
@@ -27,5 +28,6 @@ func main() {
 		o, _ := telegram.Get(k)
 		fmt.Println(o)
 	}
-
+	//http.Handle("/metrics", promhttp.Handler())
+	//http.ListenAndServe(":9053", nil)
 }

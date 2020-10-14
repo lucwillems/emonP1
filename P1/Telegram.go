@@ -12,6 +12,7 @@ type Telegram struct {
 	Timestamp time.Time
 	Failures  int
 	Objects   map[string]*COSEMInstance
+	Checksum  string
 }
 
 func NewTelegram() *Telegram {
