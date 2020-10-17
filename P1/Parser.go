@@ -23,7 +23,7 @@ var (
 )
 
 // parsedTelegram parses lines from P1 data, or telegrams
-func Parse(message string) *Telegram {
+func Parse(message string, verbose bool) (*Telegram, error) {
 	lines := strings.Split(message, "\n")
 
 	tgram := NewTelegram()
@@ -63,16 +63,21 @@ func Parse(message string) *Telegram {
 				tgram.Objects[obj.Id] = obj
 			} else {
 				tgram.Failures++
-				fmt.Fprintf(os.Stderr, "%d | Already exists: %s\n", n, obj.Id)
+				if verbose {
+					fmt.Fprintf(os.Stderr, "%d | Already exists: %s\n", n, obj.Id)
+				}
+
 			}
 		} else {
 			if err != nil {
 				tgram.Failures++
-				fmt.Fprintf(os.Stderr, "%d | %s\n", n, err.Error())
+				if verbose {
+					fmt.Fprintf(os.Stderr, "%d | %s\n", n, err.Error())
+				}
 			}
 		}
 	}
-	return tgram
+	return tgram, nil
 }
 
 func (td *COSEMInstance) handleCOSUMValues(rawValue string) (*COSEMInstance, error) {
