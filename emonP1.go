@@ -2,13 +2,13 @@ package main
 
 import (
 	"bufio"
+	"emonP1/Handlers"
 	"flag"
 	"fmt"
 	"github.com/tarm/serial"
 	"io"
 	"log"
 	"os"
-	"scm.t-m-m.be/emonP1/P1"
 	"time"
 )
 
@@ -21,10 +21,11 @@ var (
 	timeoutFlag = flag.Int("timeout", 2000, "read timeout in msec.")
 	bitsFlag    = flag.Int("bits", 8, "Number of databits.")
 	verboseFlag = flag.Bool("verbose", false, "verbose")
+	mqttFlag    = flag.Bool("mqtt", false, "send over mqtt")
 	parityFlag  = flag.String("parity", "none", "Parity the use (none/odd/even/mark/space).")
 )
 
-func processSerial() error {
+func openSerial() (*bufio.Reader, error) {
 	var parity serial.Parity
 	switch *parityFlag {
 	case "none":
@@ -51,106 +52,85 @@ func processSerial() error {
 
 	p, err := serial.OpenPort(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer p.Close()
 	reader := bufio.NewReader(p)
-	for {
-		if err := process(reader); err != nil {
-			return err
-		}
-	}
-	return nil
+	return reader, nil
 }
 
-func processFile() error {
+func openFile() (*bufio.Reader, error) {
 
 	data, err := os.Open(*fileFlag)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer data.Close()
 	reader := bufio.NewReader(data)
-
-	for {
-		if err := process(reader); err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			break
-		}
-		time.Sleep(1)
-	}
-	return nil
+	return reader, nil
+}
+func MqttBus() (*Handlers.MqttBus, error) {
+	mqtt, err := Handlers.NewMqttBus("emonP1", "", "", "tcp://192.168.0.251")
+	return mqtt, err
+}
+func StdoutBus() (*Handlers.WriteBus, error) {
+	out, err := Handlers.NewWriterBus(os.Stdout)
+	return out, err
 }
 
-func process(br *bufio.Reader) error {
+func MessageBus() (*Handlers.MsgBus, error) {
+	var bus *Handlers.MsgBus = nil
+	var err error
 
-	if msg, err := readFrame(br); err == nil {
-		if *verboseFlag {
-			fmt.Fprintf(os.Stdout, "%s", msg)
-		}
-		if telegram, err := P1.Parse(msg, *verboseFlag); err != nil {
-			return err
+	if *mqttFlag {
+		if mqtt, err := MqttBus(); err == nil {
+			x := Handlers.MsgBus(mqtt)
+			return &x, nil
 		} else {
-			if *verboseFlag {
-				fmt.Fprintf(os.Stdout, "Device: %s\n", telegram.Device)
-			}
+			return nil, err
 		}
-		return nil
 	} else {
-		return err
-	}
-}
-
-func readFrame(br *bufio.Reader) (string, error) {
-	for {
-		if b, err := br.Peek(1); err == nil {
-			if string(b) != "/" {
-				fmt.Printf("Ignoring garbage character: %c\n", b)
-				br.ReadByte()
-				continue
-			}
+		if out, err := StdoutBus(); err == nil {
+			x := Handlers.MsgBus(out)
+			return &x, nil
 		} else {
-			if err == io.EOF {
-				return "", err
-			}
-			//wait for new character
-			time.Sleep(1)
-			continue
+			return nil, err
 		}
-		frame, err := br.ReadBytes('!')
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			continue
-		}
-		bcrc, err := br.ReadBytes('\n')
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			continue
-		}
-		msg := string(frame) + "\n" + "!" + string(bcrc)
-		frameCnt++
-		return msg, nil
 	}
-}
+	return bus, err
 
+}
 func main() {
 
 	fmt.Printf("emonP1 (%s)\n", VERSION)
 	flag.Parse()
 	fmt.Printf("running...\n")
 	var err error
+	var channel *Handlers.MsgBus
+	var reader *bufio.Reader
 
-	if *fileFlag != "" {
-		err = processFile()
-	} else {
-		err = processSerial()
+	if channel, err = MessageBus(); err == nil {
+		if *fileFlag != "" {
+			reader, err = openFile()
+		} else {
+			reader, err = openSerial()
+		}
+		if err != nil {
+			handleFatal(err)
+		}
+		processor := Handlers.NewP1Processor(reader, channel)
+		err = processor.Process()
+		fmt.Fprintf(os.Stdout, "%d frames processed", processor.FrameCnt)
+		handleFatal(err)
 	}
+	handleFatal(err)
+}
+
+func handleFatal(err error) {
 	if err != nil {
+		if err == io.EOF {
+			os.Exit(0)
+		}
 		fmt.Fprintf(os.Stderr, "error: %s", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stdout, "%d frames processed", frameCnt)
 	os.Exit(0)
 }
