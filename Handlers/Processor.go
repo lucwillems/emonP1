@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"sort"
 	"syscall"
 	"time"
 )
@@ -77,17 +76,9 @@ func (p *P1Processor) _process() error {
 			if p.verbose {
 				fmt.Fprintf(os.Stdout, "Device: %s\n", telegram.Device)
 			}
-			/* publish each telegram instance */
-			ids := telegram.OBISIds()
-			sort.Strings(ids)
-			for _, k := range ids {
-				o, _ := telegram.Get(k)
-				if err := (*p.output).Publish(o.Id, o.Value); err != nil {
-					fmt.Fprint(os.Stderr, err)
-				}
-				if p.verbose {
-					fmt.Println(o)
-				}
+			/* publish telegram */
+			if err := (*p.output).Publish(telegram); err != nil {
+				fmt.Fprint(os.Stderr, err)
 			}
 			p.FrameCnt++
 		}

@@ -1,8 +1,10 @@
 package Handlers
 
 import (
+	"emonP1/P1"
 	"fmt"
 	"io"
+	"os"
 )
 
 type WriteBus struct {
@@ -11,6 +13,7 @@ type WriteBus struct {
 
 func NewWriterBus(writer io.Writer) (*WriteBus, error) {
 	var bus WriteBus
+	bus.output = writer
 	return &bus, nil
 }
 
@@ -23,9 +26,9 @@ func (c *WriteBus) IsConnected() bool {
 	return true
 }
 
-func (c *WriteBus) Publish(id string, value interface{}) error {
+func (c *WriteBus) Publish(telegram *P1.Telegram) error {
 	if c.output != nil {
-		fmt.Fprintf(c.output, "%s : %s", id, fmt.Sprint(value))
+		fmt.Fprintf(os.Stdout, "%s : %s\n", telegram.Device, telegram.Timestamp)
 	}
 	return nil
 }

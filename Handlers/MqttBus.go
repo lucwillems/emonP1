@@ -1,6 +1,7 @@
 package Handlers
 
 import (
+	"emonP1/P1"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"os"
@@ -42,12 +43,7 @@ func (c *MqttBus) IsConnected() bool {
 	return c.client != nil
 }
 
-func (c *MqttBus) Publish(id string, value interface{}) error {
-	fmt.Fprintf(os.Stdout, "%s : %s", id, value)
+func (c *MqttBus) Publish(telegram *P1.Telegram) error {
+	fmt.Fprintf(os.Stdout, "%s : %s", telegram.Device, telegram.Timestamp)
 	return nil
-}
-
-func (c *MqttBus) MsgBus() *MsgBus {
-	x := MsgBus(c)
-	return &x
 }
