@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -61,7 +62,7 @@ func Parse(message string, verbose bool) (*Telegram, error) {
 				}
 				if obj.Id == OBISTypePowerDelivered || obj.Id == OBISTypePowerGenerated {
 					//convert to W
-					obj.Value = obj.Value.(float64) * 1000
+					obj.Value = math.Floor(obj.Value.(float64) * 1000)
 				}
 				//store obj
 				tgram.Objects[obj.Id] = obj
