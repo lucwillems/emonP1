@@ -19,6 +19,7 @@ func NewMqttBus(clientId string, user string, password string, url string) (*Mqt
 	opts.SetPassword(password)
 	opts.SetClientID(clientId)
 	bus.client = mqtt.NewClient(opts)
+	fmt.Fprintf(os.Stdout, "connect %s ...\n", url)
 	token := bus.client.Connect()
 	for !token.WaitTimeout(3 * time.Second) {
 	}

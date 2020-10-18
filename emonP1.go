@@ -21,7 +21,7 @@ var (
 	timeoutFlag = flag.Int("timeout", 2000, "read timeout in msec.")
 	bitsFlag    = flag.Int("bits", 8, "Number of databits.")
 	verboseFlag = flag.Bool("verbose", false, "verbose")
-	mqttFlag    = flag.Bool("mqtt", false, "send over mqtt")
+	mqttUrl     = flag.String("mqtt", "", "send over mqtt url")
 	parityFlag  = flag.String("parity", "none", "Parity the use (none/odd/even/mark/space).")
 )
 
@@ -59,7 +59,7 @@ func openSerial() (*bufio.Reader, error) {
 }
 
 func openFile() (*bufio.Reader, error) {
-
+	fmt.Fprintf(os.Stdout, "opening file %s\n", *fileFlag)
 	data, err := os.Open(*fileFlag)
 	if err != nil {
 		return nil, err
@@ -67,8 +67,9 @@ func openFile() (*bufio.Reader, error) {
 	reader := bufio.NewReader(data)
 	return reader, nil
 }
+
 func MqttBus() (*Handlers.MqttBus, error) {
-	mqtt, err := Handlers.NewMqttBus("emonP1", "", "", "tcp://192.168.0.251")
+	mqtt, err := Handlers.NewMqttBus("emonP1", "", "", *mqttUrl)
 	return mqtt, err
 }
 func StdoutBus() (*Handlers.WriteBus, error) {
@@ -80,7 +81,7 @@ func MessageBus() (*Handlers.MsgBus, error) {
 	var bus *Handlers.MsgBus = nil
 	var err error
 
-	if *mqttFlag {
+	if *mqttUrl != "" {
 		if mqtt, err := MqttBus(); err == nil {
 			x := Handlers.MsgBus(mqtt)
 			return &x, nil
