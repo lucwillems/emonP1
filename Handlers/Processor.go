@@ -12,7 +12,7 @@ import (
 )
 
 type P1Processor struct {
-	FrameCnt int
+	FrameCnt uint64
 	verbose  bool
 	input    *bufio.Reader
 	output   *MsgBus
@@ -60,6 +60,7 @@ func (p *P1Processor) readFrame() (string, error) {
 
 func (p *P1Processor) Debug(b bool) {
 	p.verbose = b
+	(*p.output).Debug(b)
 }
 
 func (p *P1Processor) _process() error {
@@ -77,7 +78,7 @@ func (p *P1Processor) _process() error {
 				fmt.Fprintf(os.Stdout, "Device: %s\n", telegram.Device)
 			}
 			/* publish telegram */
-			if err := (*p.output).Publish(telegram); err != nil {
+			if err := (*p.output).Publish(p.FrameCnt, telegram); err != nil {
 				fmt.Fprint(os.Stderr, err)
 			}
 			p.FrameCnt++
@@ -94,6 +95,7 @@ func (p *P1Processor) Process() error {
 	for {
 		select {
 		case <-signalEvent:
+			//fmt.Fprintf(os.Stdout,"%n processed\n",p.FrameCnt)
 			return nil
 		default:
 			err := p._process()

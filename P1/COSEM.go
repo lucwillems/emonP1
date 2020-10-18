@@ -24,3 +24,11 @@ func (td *COSEMInstance) String() string {
 	s := fmt.Sprint(td.Value)
 	return fmt.Sprintf("%-15s: %s %s (%s) %s", td.Id, s, td.info.Unit, td.info.Type, td.info.Description)
 }
+
+func (td *COSEMInstance) Queue() string {
+	return td.info.Queue
+}
+
+func (td *COSEMInstance) AsString() string {
+	return fmt.Sprint(td.Value)
+}

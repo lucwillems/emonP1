@@ -22,7 +22,7 @@ var (
 	timeoutFlag = flag.Int("timeout", 2000, "read timeout in msec.")
 	bitsFlag    = flag.Int("bits", 8, "Number of databits.")
 	verboseFlag = flag.Bool("verbose", false, "verbose")
-	mqttUrl     = flag.String("mqtt", "", "send over mqtt url")
+	mqttUrl     = flag.String("mqtt", "tcp://127.0.0.1:1883", "send over mqtt url")
 	parityFlag  = flag.String("parity", "none", "Parity the use (none/odd/even/mark/space).")
 )
 
@@ -70,7 +70,7 @@ func openFile() (*bufio.Reader, error) {
 }
 
 func MqttBus() (*Handlers.MqttBus, error) {
-	mqtt, err := Handlers.NewMqttBus("emonP1", "", "", *mqttUrl)
+	mqtt, err := Handlers.NewMqttBus("emonP1", "emonP1", "emonP1", *mqttUrl)
 	return mqtt, err
 }
 func StdoutBus() (*Handlers.WriteBus, error) {
@@ -124,6 +124,7 @@ func main() {
 	flag.Parse()
 	fmt.Printf("running...\n")
 	processor := Handlers.NewP1Processor(Reader(), MessageBus())
+	processor.Debug(*verboseFlag)
 	go process(processor)
 	<-terminate
 	fmt.Fprintf(os.Stdout, "%d frames processed\n", processor.FrameCnt)
