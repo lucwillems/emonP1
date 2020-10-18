@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"sort"
+	"syscall"
 	"time"
 )
 
@@ -28,7 +30,9 @@ func (p *P1Processor) readFrame() (string, error) {
 	for {
 		if b, err := p.input.Peek(1); err == nil {
 			if string(b) != "/" {
-				fmt.Printf("Ignoring garbage character: %c\n", b)
+				if p.verbose {
+					fmt.Printf("Ignoring garbage character: %c\n", b)
+				}
 				p.input.ReadByte()
 				continue
 			}
@@ -59,8 +63,10 @@ func (p *P1Processor) Debug(b bool) {
 	p.verbose = b
 }
 
-func (p *P1Processor) Process() error {
-	if msg, err := p.readFrame(); err == nil {
+func (p *P1Processor) _process() error {
+	if msg, err := p.readFrame(); err != nil {
+		return err
+	} else {
 		if p.verbose {
 			fmt.Fprintf(os.Stdout, "%s", msg)
 		}
@@ -85,7 +91,28 @@ func (p *P1Processor) Process() error {
 			}
 			p.FrameCnt++
 		}
-
 	}
 	return nil
+}
+
+func (p *P1Processor) Process() error {
+	fmt.Fprintf(os.Stdout, "verbose: %v\n", p.verbose)
+	var signalEvent = make(chan os.Signal, 1)
+	signal.Notify(signalEvent, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+
+	for {
+		select {
+		case <-signalEvent:
+			return nil
+		default:
+			err := p._process()
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (p *P1Processor) Close() {
+	(*p.output).Close()
 }

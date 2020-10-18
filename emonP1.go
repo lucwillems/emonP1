@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+var terminate = make(chan bool, 1)
 var VERSION = "1.0"
 var frameCnt int64 = 0
 var (
@@ -49,7 +50,7 @@ func openSerial() (*bufio.Reader, error) {
 		Parity:      parity,
 		ReadTimeout: time.Millisecond * time.Duration(*timeoutFlag),
 	}
-
+	fmt.Fprintf(os.Stdout, "open %s (%v,%v,%s)\n", c.Name, c.Baud, c.Size, *parityFlag)
 	p, err := serial.OpenPort(c)
 	if err != nil {
 		return nil, err
@@ -77,61 +78,64 @@ func StdoutBus() (*Handlers.WriteBus, error) {
 	return out, err
 }
 
-func MessageBus() (*Handlers.MsgBus, error) {
-	var bus *Handlers.MsgBus = nil
+func Reader() *bufio.Reader {
+	var reader *bufio.Reader
 	var err error
-
-	if *mqttUrl != "" {
-		if mqtt, err := MqttBus(); err == nil {
-			x := Handlers.MsgBus(mqtt)
-			return &x, nil
-		} else {
-			return nil, err
+	if *fileFlag != "" {
+		if reader, err = openFile(); err != nil {
+			handleFatal(err)
 		}
 	} else {
-		if out, err := StdoutBus(); err == nil {
-			x := Handlers.MsgBus(out)
-			return &x, nil
-		} else {
-			return nil, err
+		if reader, err = openSerial(); err != nil {
+			handleFatal(err)
 		}
 	}
-	return bus, err
-
+	return reader
 }
-func main() {
 
+func MessageBus() *Handlers.MsgBus {
+	var msgBus Handlers.MsgBus
+	if *mqttUrl != "" {
+		if mqtt, err := MqttBus(); err != nil {
+			handleFatal(err)
+		} else {
+			msgBus = Handlers.MsgBus(mqtt)
+		}
+	} else {
+		if out, err := StdoutBus(); err != nil {
+			handleFatal(err)
+		} else {
+			msgBus = Handlers.MsgBus(out)
+		}
+	}
+	return &msgBus
+}
+
+func process(processor *Handlers.P1Processor) {
+	if err := processor.Process(); err != nil {
+		handleFatal(err)
+	}
+	processor.Close()
+	terminate <- true
+}
+
+func main() {
 	fmt.Printf("emonP1 (%s)\n", VERSION)
 	flag.Parse()
 	fmt.Printf("running...\n")
-	var err error
-	var channel *Handlers.MsgBus
-	var reader *bufio.Reader
-
-	if channel, err = MessageBus(); err == nil {
-		if *fileFlag != "" {
-			reader, err = openFile()
-		} else {
-			reader, err = openSerial()
-		}
-		if err != nil {
-			handleFatal(err)
-		}
-		processor := Handlers.NewP1Processor(reader, channel)
-		err = processor.Process()
-		fmt.Fprintf(os.Stdout, "%d frames processed", processor.FrameCnt)
-		handleFatal(err)
-	}
-	handleFatal(err)
+	processor := Handlers.NewP1Processor(Reader(), MessageBus())
+	go process(processor)
+	<-terminate
+	fmt.Fprintf(os.Stdout, "%d frames processed\n", processor.FrameCnt)
+	fmt.Printf("done")
 }
 
 func handleFatal(err error) {
 	if err != nil {
 		if err == io.EOF {
-			os.Exit(0)
+			return
 		}
 		fmt.Fprintf(os.Stderr, "error: %s", err)
 		os.Exit(1)
 	}
-	os.Exit(0)
 }
