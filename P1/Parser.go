@@ -17,7 +17,7 @@ var (
 	telegramHeaderRegex = regexp.MustCompile(`^/(.+)$`)
 	checksumRegex       = regexp.MustCompile(`^!(.+)$`)
 	cosemOBISRegex      = regexp.MustCompile(`^(\d+-\d+:\d+\.\d+\.\d+)(.+)$`)
-	cosemValueUnitRegex = regexp.MustCompile(`^\(([\w.]+)(([*\s])([\w]+))?\)$`)
+	cosemValueUnitRegex = regexp.MustCompile(`^\(([\w.]*)(([*\s])([\w]+))?\)$`)
 	cosemMBusValueUnit  = regexp.MustCompile(`^\((\d{12}\w)\)\(([\d.]+)(([*\s])([\w]+))?\)$`)
 	cosemLogDataRegex   = regexp.MustCompile(`^\((\d{0,2})\)\((\d+-\d+:\d+\.\d+\.\d+)\)(.+)$`)
 	cosemLogValueUnit   = regexp.MustCompile(`\(([\w.]+)[*\s]?([\w]+)?\)`)
@@ -68,13 +68,14 @@ func Parse(message string, verbose bool) (*Telegram, error) {
 					//store obj
 					tgram.Objects[obj.Id] = obj
 				} else {
-					tgram.Failures++
-					fmt.Fprintf(os.Stderr, "%d | invalid : %s %v\n", n, obj.Id, obj.rawValue)
+					if verbose {
+						fmt.Fprintf(os.Stderr, "%d | empty : %s %v\n", n+1, obj.Id, obj.rawValue)
+					}
 				}
 			} else {
 				tgram.Failures++
 				if verbose {
-					fmt.Fprintf(os.Stderr, "%d | Already exists: %s\n", n, obj.Id)
+					fmt.Fprintf(os.Stderr, "%d | Already exists: %s\n", n+1, obj.Id)
 				}
 
 			}
@@ -82,7 +83,7 @@ func Parse(message string, verbose bool) (*Telegram, error) {
 			if err != nil {
 				tgram.Failures++
 				if verbose {
-					fmt.Fprintf(os.Stderr, "%d | %s\n", n, err.Error())
+					fmt.Fprintf(os.Stderr, "%d | %s\n", n+1, err.Error())
 				}
 			}
 		}
@@ -177,6 +178,9 @@ func GetTimeZone() string {
 
 func toTimestamp(s string) (time.Time, error) {
 	// Remove the DST indicator from the timestamp
+	if len(s) != 13 {
+		return time.Unix(0, 0), fmt.Errorf("invalid time format [%s]", s)
+	}
 	rawDateTime := s[:len(s)-1]
 	if location, err := time.LoadLocation(GetTimeZone()); err == nil {
 		if dateTime, err := time.ParseInLocation(P1TimestampFormat, rawDateTime, location); err == nil {
