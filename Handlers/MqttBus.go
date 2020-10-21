@@ -103,7 +103,7 @@ func (c *MqttBus) _topic(name string) string {
 }
 
 func (c *MqttBus) _publishCOSEM(item *P1.COSEMInstance) mqtt.Token {
-	ok, _ := item.IsValid()
+	ok := item.IsValid() && item.HasValue()
 	if len(item.Queue()) > 0 && ok {
 		t := c._publish(c._topic(item.Queue()), item.AsString())
 		t.WaitTimeout(200 * time.Millisecond)

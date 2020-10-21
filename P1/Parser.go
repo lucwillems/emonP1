@@ -53,19 +53,24 @@ func Parse(message string, verbose bool) (*Telegram, error) {
 
 		if obj, err := ParseTelegramLine(strings.TrimSpace(l)); err == nil && obj != nil {
 			if _, exists := tgram.Objects[obj.Id]; exists == false {
-				//telegram timestamp
-				if obj.Id == OBISTypeDateTimestamp {
-					obj.Timestamp = obj.Value.(time.Time)
+				if obj.HasValue() {
+					//telegram timestamp
+					if obj.Id == OBISTypeDateTimestamp {
+						obj.Timestamp = obj.Value.(time.Time)
+					}
+					if obj.Id == OBISTypeVersionInformation || obj.Id == OBISTypeBEVersionInfo {
+						tgram.Version = obj.Value.(string)
+					}
+					if obj.Id == OBISTypePowerDelivered || obj.Id == OBISTypePowerGenerated {
+						//convert to W
+						obj.Value = math.Floor(obj.Value.(float64) * 1000)
+					}
+					//store obj
+					tgram.Objects[obj.Id] = obj
+				} else {
+					tgram.Failures++
+					fmt.Fprintf(os.Stderr, "%d | invalid : %s %v\n", n, obj.Id, obj.rawValue)
 				}
-				if obj.Id == OBISTypeVersionInformation || obj.Id == OBISTypeBEVersionInfo {
-					tgram.Version = obj.Value.(string)
-				}
-				if obj.Id == OBISTypePowerDelivered || obj.Id == OBISTypePowerGenerated {
-					//convert to W
-					obj.Value = math.Floor(obj.Value.(float64) * 1000)
-				}
-				//store obj
-				tgram.Objects[obj.Id] = obj
 			} else {
 				tgram.Failures++
 				if verbose {

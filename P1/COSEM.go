@@ -16,8 +16,12 @@ type COSEMInstance struct {
 	err      error
 }
 
-func (td *COSEMInstance) IsValid() (bool, error) {
-	return td.err == nil, td.err
+func (td *COSEMInstance) IsValid() bool {
+	return td.err == nil
+}
+
+func (td *COSEMInstance) HasValue() bool {
+	return td.Value != nil
 }
 
 func (td *COSEMInstance) String() string {
